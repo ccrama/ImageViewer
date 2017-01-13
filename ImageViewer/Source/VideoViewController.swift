@@ -40,11 +40,20 @@ class VideoViewController: ItemBaseController<VideoView> {
         embeddedPlayButton.autoresizingMask = [.flexibleTopMargin, .flexibleLeftMargin, .flexibleBottomMargin, .flexibleRightMargin]
         self.view.addSubview(embeddedPlayButton)
         embeddedPlayButton.center = self.view.boundsCenter
+        NotificationCenter.default.addObserver(self,
+                                                         selector: "playerItemDidReachEnd:",
+                                                         name: NSNotification.Name.AVPlayerItemDidPlayToEndTime,
+                                                         object: self.player.currentItem) // Add observer
 
-        embeddedPlayButton.addTarget(self, action: #selector(playVideoInitially), for: UIControlEvents.touchUpInside)
-
+        embeddedPlayButton.alpha = 0
+        playVideoInitially()
         self.itemView.player = player
         self.itemView.contentMode = .scaleAspectFill
+    }
+    
+    func playerItemDidReachEnd(notification: NSNotification) {
+        self.player.seek(to: kCMTimeZero)
+        self.player.play()
     }
 
     override func viewWillAppear(_ animated: Bool) {
