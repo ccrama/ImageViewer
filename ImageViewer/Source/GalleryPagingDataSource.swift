@@ -39,7 +39,7 @@ public final class GalleryPagingDataSource: NSObject, UIPageViewControllerDataSo
         }
     }
 
-    func pageViewController(_ pageViewController: UIPageViewController, viewControllerBefore viewController: UIViewController) -> UIViewController? {
+    public func pageViewController(_ pageViewController: UIPageViewController, viewControllerBefore viewController: UIViewController) -> UIViewController? {
 
         guard let currentController = viewController as? ItemController else { return nil }
         let previousIndex = (currentController.index == 0) ? itemCount - 1 : currentController.index - 1
@@ -54,7 +54,7 @@ public final class GalleryPagingDataSource: NSObject, UIPageViewControllerDataSo
         }
     }
 
-    func pageViewController(_ pageViewController: UIPageViewController, viewControllerAfter viewController: UIViewController) -> UIViewController? {
+    public func pageViewController(_ pageViewController: UIPageViewController, viewControllerAfter viewController: UIViewController) -> UIViewController? {
 
         guard let currentController = viewController as? ItemController  else { return nil }
         let nextIndex = (currentController.index == itemCount - 1) ? 0 : currentController.index + 1
