@@ -34,7 +34,7 @@ open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
     // DATASOURCE/DELEGATE
     fileprivate let itemsDelegate: GalleryItemsDelegate?
     fileprivate let itemsDataSource: GalleryItemsDataSource
-    fileprivate let pagingDataSource: GalleryPagingDataSource
+    public let pagingDataSource: GalleryPagingDataSource
 
     // CONFIGURATION
     fileprivate var spineDividerWidth:         Float = 10
