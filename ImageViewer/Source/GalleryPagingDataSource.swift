@@ -69,7 +69,7 @@ public final class GalleryPagingDataSource: NSObject, UIPageViewControllerDataSo
         }
     }
 
-    func createItemController(_ itemIndex: Int, isInitial: Bool = false) -> UIViewController {
+    public func createItemController(_ itemIndex: Int, isInitial: Bool = false) -> UIViewController {
 
         guard let itemsDataSource = itemsDataSource else { return UIViewController() }
 
