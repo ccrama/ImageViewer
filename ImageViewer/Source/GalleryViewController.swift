@@ -248,7 +248,7 @@ open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
         initialPresentationDone = true
     }
 
-    fileprivate func presentInitially() {
+    public func presentInitially() {
 
         isAnimating = true
 
