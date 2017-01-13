@@ -8,7 +8,7 @@
 
 import UIKit
 
-final class GalleryPagingDataSource: NSObject, UIPageViewControllerDataSource {
+public final class GalleryPagingDataSource: NSObject, UIPageViewControllerDataSource {
 
     weak var itemControllerDelegate: ItemControllerDelegate?
     fileprivate weak var itemsDataSource:          GalleryItemsDataSource?
