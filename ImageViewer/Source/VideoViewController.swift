@@ -52,7 +52,11 @@ class VideoViewController: ItemBaseController<VideoView> {
     }
     
     func playerItemDidReachEnd(notification: NSNotification) {
-        self.player.seek(to: kCMTimeZero)
+        //now use seek to make current playback time to the specified time in this case (O)
+        let duration : Int64 = 0
+        let preferredTimeScale : Int32 = 1
+        let seekTime : CMTime = CMTimeMake(duration, preferredTimeScale)
+        self.player.seek(to: seekTime)
         self.player.play()
     }
 
@@ -98,6 +102,7 @@ class VideoViewController: ItemBaseController<VideoView> {
 
         self.player.play()
 
+        activityIndicatorView.stopAnimating()
 
         UIView.animate(withDuration: 0.25, animations: { [weak self] in
 
