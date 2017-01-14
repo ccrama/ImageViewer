@@ -1,187 +1,216 @@
 //
-//  ViewController.swift
-//  Example
+//  ImageViewController.swift
+//  ImageViewer
 //
-//  Created by Rui Peres on 05/12/2015.
-//  Copyright © 2015 MailOnline. All rights reserved.
+//  Created by Kristian Angyal on 01/08/2016.
+//  Copyright © 2016 MailOnline. All rights reserved.
 //
 
 import UIKit
+import AVFoundation
 
-extension UIImageView: DisplaceableView {}
 
-struct DataItem {
+extension VideoView: ItemView {}
 
-    let imageView: UIImageView
-    let galleryItem: GalleryItem
-}
+class VideoViewController: ItemBaseController<VideoView> {
 
-class ViewController: UIViewController {
+    fileprivate let swipeToDismissFadeOutAccelerationFactor: CGFloat = 6
 
-    @IBOutlet weak var image1: UIImageView!
-    @IBOutlet weak var image2: UIImageView!
-    @IBOutlet weak var image3: UIImageView!
-    @IBOutlet weak var image4: UIImageView!
-    @IBOutlet weak var image5: UIImageView!
-    @IBOutlet weak var image6: UIImageView!
-    @IBOutlet weak var image7: UIImageView!
+    let videoURL: URL
+    let player: AVPlayer
+    unowned let scrubber: VideoScrubber
 
-    var items: [DataItem] = []
+    let fullHDScreenSize = CGSize(width: 1920, height: 1080)
+    let embeddedPlayButton = UIButton.circlePlayButton(70)
+
+    init(index: Int, itemCount: Int, fetchImageBlock: @escaping FetchImageBlock, videoURL: URL, scrubber: VideoScrubber, configuration: GalleryConfiguration, isInitialController: Bool = false) {
+
+        self.videoURL = videoURL
+        self.scrubber = scrubber
+        self.player = AVPlayer(url: self.videoURL)
+
+        super.init(index: index, itemCount: itemCount, fetchImageBlock: fetchImageBlock, configuration: configuration, isInitialController: isInitialController)
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        let imageViews = [image1, image2, image3, image4, image5, image6, image7]
+        if isInitialController == true { embeddedPlayButton.alpha = 0 }
 
-        for (index, imageView) in imageViews.enumerated() {
+        embeddedPlayButton.autoresizingMask = [.flexibleTopMargin, .flexibleLeftMargin, .flexibleBottomMargin, .flexibleRightMargin]
+        self.view.addSubview(embeddedPlayButton)
+        embeddedPlayButton.center = self.view.boundsCenter
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(self.playerItemDidReachEnd(notification:)),
+                                                         name: NSNotification.Name.AVPlayerItemDidPlayToEndTime,
+                                                         object: self.player.currentItem) // Add observer
 
-            guard let imageView = imageView else { continue }
-            var galleryItem: GalleryItem!
+        embeddedPlayButton.alpha = 0
+        playVideoInitially()
+        self.itemView.player = player
+        self.itemView.contentMode = .scaleAspectFill
+    }
+    
+    func playerItemDidReachEnd(notification: NSNotification) {
+        self.player.seek(to: CMTime.init(seconds: 0, preferredTimescale: .allZeros))
+        self.player.play()
+    }
 
-            switch index {
+    override func viewWillAppear(_ animated: Bool) {
 
-            case 2:
+        self.player.addObserver(self, forKeyPath: "status", options: NSKeyValueObservingOptions.new, context: nil)
+        self.player.addObserver(self, forKeyPath: "rate", options: NSKeyValueObservingOptions.new, context: nil)
 
-                galleryItem = GalleryItem.video(fetchPreviewImageBlock: { $0(UIImage(named: "2")!) }, videoURL: URL (string: "http://video.dailymail.co.uk/video/mol/test/2016/09/21/5739239377694275356/1024x576_MP4_5739239377694275356.mp4")!)
+        UIApplication.shared.beginReceivingRemoteControlEvents()
 
-            case 4:
+        super.viewWillAppear(animated)
+    }
 
-                let myFetchImageBlock: FetchImageBlock = { $0(imageView.image!) }
+    override func viewWillDisappear(_ animated: Bool) {
 
-                let itemViewControllerBlock: ItemViewControllerBlock = { index, itemCount, fetchImageBlock, configuration, isInitialController in
+        self.player.removeObserver(self, forKeyPath: "status")
+        self.player.removeObserver(self, forKeyPath: "rate")
 
-                    return AnimatedViewController(index: index, itemCount: itemCount, fetchImageBlock: myFetchImageBlock, configuration: configuration, isInitialController: isInitialController)
+        UIApplication.shared.endReceivingRemoteControlEvents()
+
+        super.viewWillDisappear(animated)
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+
+        self.player.pause()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+
+        itemView.bounds.size = aspectFitSize(forContentOfSize: fullHDScreenSize, inBounds: self.scrollView.bounds.size)
+        itemView.center = scrollView.boundsCenter
+    }
+
+    func playVideoInitially() {
+
+        self.player.play()
+
+        activityIndicatorView.stopAnimating()
+
+        UIView.animate(withDuration: 0.25, animations: { [weak self] in
+
+            self?.embeddedPlayButton.alpha = 0
+
+        }, completion: { [weak self] _ in
+
+            self?.embeddedPlayButton.isHidden = true
+        })
+    }
+
+    override func closeDecorationViews(_ duration: TimeInterval) {
+
+        UIView.animate(withDuration: duration, animations: { [weak self] in
+
+            self?.embeddedPlayButton.alpha = 0
+            self?.itemView.previewImageView.alpha = 1
+        })
+    }
+
+    override func presentItem(alongsideAnimation: () -> Void, completion: @escaping () -> Void) {
+
+        let circleButtonAnimation = {
+
+            UIView.animate(withDuration: 0.15, animations: { [weak self] in
+                self?.embeddedPlayButton.alpha = 1
+            })
+        }
+
+        super.presentItem(alongsideAnimation: alongsideAnimation) {
+
+            circleButtonAnimation()
+            completion()
+        }
+    }
+
+    override func displacementTargetSize(forSize size: CGSize) -> CGSize {
+
+        return aspectFitSize(forContentOfSize: fullHDScreenSize, inBounds: rotationAdjustedBounds().size)
+    }
+
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+
+        if keyPath == "rate" || keyPath == "status" {
+
+            fadeOutEmbeddedPlayButton()
+        }
+
+        else if keyPath == "contentOffset" {
+
+            handleSwipeToDismissTransition()
+        }
+
+        super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
+    }
+
+    func handleSwipeToDismissTransition() {
+
+        guard let _ = swipingToDismiss else { return }
+
+        embeddedPlayButton.center.y = view.center.y - scrollView.contentOffset.y
+    }
+
+    func fadeOutEmbeddedPlayButton() {
+
+        if player.isPlaying() && embeddedPlayButton.alpha != 0  {
+
+            UIView.animate(withDuration: 0.3, animations: { [weak self] in
+
+                self?.embeddedPlayButton.alpha = 0
+            })
+        }
+    }
+
+    override func remoteControlReceived(with event: UIEvent?) {
+
+        if let event = event {
+
+            if event.type == UIEventType.remoteControl {
+
+                switch event.subtype {
+
+                case .remoteControlTogglePlayPause:
+
+                    if self.player.isPlaying()  {
+
+                        self.player.pause()
+                    }
+                    else {
+
+                        self.player.play()
+                    }
+
+                case .remoteControlPause:
+
+                    self.player.pause()
+
+                case .remoteControlPlay:
+
+                    self.player.play()
+
+                case .remoteControlPreviousTrack:
+
+                    self.player.pause()
+                    self.player.seek(to: CMTime(value: 0, timescale: 1))
+                    self.player.play()
+
+                default:
+
+                    break
                 }
-
-                galleryItem = GalleryItem.custom(fetchImageBlock: myFetchImageBlock, itemViewControllerBlock: itemViewControllerBlock)
-
-            default:
-
-                let image = imageView.image ?? UIImage(named: "0")!
-                galleryItem = GalleryItem.image { $0(image) }
             }
-
-            items.append(DataItem(imageView: imageView, galleryItem: galleryItem))
         }
     }
-
-    @IBAction func showGalleryImageViewer(_ sender: UITapGestureRecognizer) {
-
-        guard let displacedView = sender.view as? UIImageView else { return }
-
-        guard let displacedViewIndex = items.index(where: { $0.imageView == displacedView }) else { return }
-
-        let frame = CGRect(x: 0, y: 0, width: 200, height: 24)
-        let headerView = CounterView(frame: frame, currentIndex: displacedViewIndex, count: items.count)
-        let footerView = CounterView(frame: frame, currentIndex: displacedViewIndex, count: items.count)
-
-        let galleryViewController = GalleryViewController(startIndex: displacedViewIndex, itemsDataSource: self, itemsDelegate: self, displacedViewsDataSource: self, configuration: galleryConfiguration())
-        galleryViewController.headerView = headerView
-        galleryViewController.footerView = footerView
-
-        galleryViewController.launchedCompletion = { print("LAUNCHED") }
-        galleryViewController.closedCompletion = { print("CLOSED") }
-        galleryViewController.swipedToDismissCompletion = { print("SWIPE-DISMISSED") }
-
-        galleryViewController.landedPageAtIndexCompletion = { index in
-
-            print("LANDED AT INDEX: \(index)")
-
-            headerView.count = self.items.count
-            headerView.currentIndex = index
-            footerView.count = self.items.count
-            footerView.currentIndex = index
-        }
-
-        self.presentImageGallery(galleryViewController)
-    }
-
-    func galleryConfiguration() -> GalleryConfiguration {
-
-        return [
-
-            GalleryConfigurationItem.closeButtonMode(.builtIn),
-
-            GalleryConfigurationItem.pagingMode(.standard),
-            GalleryConfigurationItem.presentationStyle(.displacement),
-            GalleryConfigurationItem.hideDecorationViewsOnLaunch(false),
-
-            GalleryConfigurationItem.swipeToDismissMode(.vertical),
-            GalleryConfigurationItem.toggleDecorationViewsBySingleTap(false),
-
-            GalleryConfigurationItem.overlayColor(UIColor(white: 0.035, alpha: 1)),
-            GalleryConfigurationItem.overlayColorOpacity(1),
-            GalleryConfigurationItem.overlayBlurOpacity(1),
-            GalleryConfigurationItem.overlayBlurStyle(UIBlurEffectStyle.light),
-
-            GalleryConfigurationItem.maximumZoomScale(8),
-            GalleryConfigurationItem.swipeToDismissThresholdVelocity(500),
-
-            GalleryConfigurationItem.doubleTapToZoomDuration(0.15),
-
-            GalleryConfigurationItem.blurPresentDuration(0.5),
-            GalleryConfigurationItem.blurPresentDelay(0),
-            GalleryConfigurationItem.colorPresentDuration(0.25),
-            GalleryConfigurationItem.colorPresentDelay(0),
-
-            GalleryConfigurationItem.blurDismissDuration(0.1),
-            GalleryConfigurationItem.blurDismissDelay(0.4),
-            GalleryConfigurationItem.colorDismissDuration(0.45),
-            GalleryConfigurationItem.colorDismissDelay(0),
-
-            GalleryConfigurationItem.itemFadeDuration(0.3),
-            GalleryConfigurationItem.decorationViewsFadeDuration(0.15),
-            GalleryConfigurationItem.rotationDuration(0.15),
-
-            GalleryConfigurationItem.displacementDuration(0.55),
-            GalleryConfigurationItem.reverseDisplacementDuration(0.25),
-            GalleryConfigurationItem.displacementTransitionStyle(.springBounce(0.7)),
-            GalleryConfigurationItem.displacementTimingCurve(.linear),
-
-            GalleryConfigurationItem.statusBarHidden(true),
-            GalleryConfigurationItem.displacementKeepOriginalInPlace(false),
-            GalleryConfigurationItem.displacementInsetMargin(50)
-        ]
-    }
-}
-
-extension ViewController: GalleryDisplacedViewsDataSource {
-
-    func provideDisplacementItem(atIndex index: Int) -> DisplaceableView? {
-
-        return index < items.count ? items[index].imageView : nil
-    }
-}
-
-extension ViewController: GalleryItemsDataSource {
-
-    func itemCount() -> Int {
-
-        return items.count
-    }
-
-    func provideGalleryItem(_ index: Int) -> GalleryItem {
-
-        return items[index].galleryItem
-    }
-}
-
-extension ViewController: GalleryItemsDelegate {
-
-    func removeGalleryItem(at index: Int) {
-
-        print("remove item at \(index)")
-
-        let imageView = items[index].imageView
-        imageView.removeFromSuperview()
-        items.remove(at: index)
-    }
-}
-
-// Some external custom UIImageView we want to show in the gallery
-class FLSomeAnimatedImage: UIImageView {
-}
-
-// Extend ImageBaseController so we get all the functionality for free
-class AnimatedViewController: ItemBaseController<FLSomeAnimatedImage> {
 }
