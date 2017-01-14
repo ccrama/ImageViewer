@@ -41,7 +41,7 @@ class VideoViewController: ItemBaseController<VideoView> {
         self.view.addSubview(embeddedPlayButton)
         embeddedPlayButton.center = self.view.boundsCenter
         NotificationCenter.default.addObserver(self,
-                                                         selector: "playerItemDidReachEnd:",
+                                               selector: #selector(self.playerItemDidReachEnd(notification:)),
                                                          name: NSNotification.Name.AVPlayerItemDidPlayToEndTime,
                                                          object: self.player.currentItem) // Add observer
 
@@ -52,12 +52,8 @@ class VideoViewController: ItemBaseController<VideoView> {
     }
     
     func playerItemDidReachEnd(notification: NSNotification) {
-        //now use seek to make current playback time to the specified time in this case (O)
-        let duration : Int64 = 0
-        let preferredTimeScale : Int32 = 1
-        let seekTime : CMTime = CMTimeMake(duration, preferredTimeScale)
-        self.player.seek(to: seekTime)
-        self.player.play()
+                    self.player.seek(to: CMTime(value: 0, timescale: 1))
+                    self.player.play()
     }
 
     override func viewWillAppear(_ animated: Bool) {
