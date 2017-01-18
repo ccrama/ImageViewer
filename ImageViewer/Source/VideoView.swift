@@ -12,7 +12,7 @@ import AVFoundation
 public class VideoView: UIView {
 
     let previewImageView = UIImageView()
-    var image: UIImage? { didSet { previewImageView.image = image } }
+    public var image: UIImage? { didSet { previewImageView.image = image } }
     var player: AVPlayer? {
 
         willSet {
@@ -30,7 +30,7 @@ public class VideoView: UIView {
                 let videoLayer = self.layer as? AVPlayerLayer {
 
                 videoLayer.player = player
-                videoLayer.videoGravity = AVLayerVideoGravityResizeAspectFit
+                videoLayer.videoGravity = AVLayerVideoGravityResizeAspect
 
                 player.addObserver(self, forKeyPath: "status", options: NSKeyValueObservingOptions.new, context: nil)
                 player.addObserver(self, forKeyPath: "rate", options: NSKeyValueObservingOptions.new, context: nil)
