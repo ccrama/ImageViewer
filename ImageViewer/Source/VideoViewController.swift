@@ -92,7 +92,7 @@ public class VideoViewController: ItemBaseController<VideoView> {
         super.viewDidLayoutSubviews()
 
         let isLandscape = itemView.bounds.width >= itemView.bounds.height
-        itemView.bounds.size = aspectFitSize(forContentOfSize: isLandscape ? fullHDScreenSizeLandscape : fullHDScreenSizePortrait, inBounds: self.scrollView.bounds.size)        itemView.center = scrollView.boundsCenter
+        itemView.bounds.size = aspectFitSize(forContentOfSize: isLandscape ? fullHDScreenSizeLandscape : fullHDScreenSizePortrait, inBounds: self.scrollView.bounds.size)
         itemView.center = scrollView.boundsCenter
     }
 
