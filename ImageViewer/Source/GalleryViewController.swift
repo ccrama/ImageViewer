@@ -598,7 +598,6 @@ open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
     public func itemControllerDidAppear(_ controller: ItemController) {
 
         self.currentIndex = controller.index
-        self.landedPageAtIndexCompletion?(self.currentIndex)
         self.headerView?.sizeToFit()
         self.footerView?.sizeToFit()
 
@@ -614,6 +613,9 @@ open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
         }  else if let _ = controller as? ImageViewController {
             currentController = controller as! ImageViewController
         }
+        
+        self.landedPageAtIndexCompletion?(self.currentIndex)
+
     }
 
     public func itemControllerDidSingleTap(_ controller: ItemController) {
